@@ -31,10 +31,10 @@ jobs:
 
       - run: npm run build
 
+      # Richiede che Pages sia gia' attivo sul repo con source "GitHub Actions":
+      # il GITHUB_TOKEN del workflow non ha il permesso di crearlo da solo.
       - name: Configura Pages
         uses: actions/configure-pages@v5
-        with:
-          enablement: true
 
       - uses: actions/upload-pages-artifact@v3
         with:
