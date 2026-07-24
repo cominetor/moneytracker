@@ -119,7 +119,8 @@ export default function AssetForm({ holding, onSave, onClose }) {
 
           {values.tipo === 'stock' && (
             <p className="text-xs text-subtle-light dark:text-subtle-dark">
-              Le azioni usano Alpha Vantage: serve una API key nelle impostazioni.
+              Per le borse non americane aggiungi il suffisso di mercato: ENI.MI (Milano),
+              VOD.L (Londra), AIR.PA (Parigi).
             </p>
           )}
         </div>
