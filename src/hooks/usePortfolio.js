@@ -28,6 +28,7 @@ export function usePortfolio() {
   const [priceCache, setPriceCache] = useState(() => getCache())
   const [priceErrors, setPriceErrors] = useState({})
   const [refreshing, setRefreshing] = useState(false)
+  const [refreshError, setRefreshError] = useState(null)
   const [rateLimit, setRateLimit] = useState(() => getRateLimitStatus())
 
   const snapshotDoneFor = useRef(null)
@@ -47,8 +48,10 @@ export function usePortfolio() {
       const { cache, errors } = await refreshPrices(current, settingsRef.current, { force })
       setPriceCache({ ...cache })
       setPriceErrors(errors)
-    } catch {
-      // errore globale inatteso: restano validi i prezzi già in cache
+      setRefreshError(null)
+    } catch (err) {
+      // restano validi i prezzi già in cache, ma il motivo va mostrato
+      setRefreshError(err.message || 'Aggiornamento dei prezzi non riuscito')
     } finally {
       setRefreshing(false)
       setRateLimit(getRateLimitStatus())
@@ -187,6 +190,7 @@ export function usePortfolio() {
     hasStalePrices,
     priceErrors,
     refreshing,
+    refreshError,
     rateLimit,
     refresh,
     addHolding,

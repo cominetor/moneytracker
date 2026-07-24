@@ -43,7 +43,12 @@ export default function AssetCard({ position, color, onEdit, onDelete }) {
             {formatQuantity(position.quantita)} ×{' '}
             {position.prezzoEUR === null ? '—' : formatUnitPrice(position.prezzoEUR, 'EUR')}
           </p>
-          {position.errore && (
+          {position.prezzoEUR === null && (
+            <p className="mt-1 text-xs text-negative-light dark:text-negative-dark">
+              {position.errore || 'Prezzo non ancora recuperato: usa il pulsante di aggiornamento.'}
+            </p>
+          )}
+          {position.prezzoEUR !== null && position.errore && (
             <p className="mt-1 text-xs text-muted">{position.errore}</p>
           )}
         </div>

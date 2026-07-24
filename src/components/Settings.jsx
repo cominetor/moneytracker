@@ -1,12 +1,24 @@
 import { useState } from 'react'
 import Modal from './Modal.jsx'
 import { MAX_PER_DAY } from '../services/rateLimiter.js'
+import { runDiagnostics } from '../services/diagnostics.js'
 
 export default function Settings({ settings, rateLimit, onSave, onClose }) {
   const [apiKey, setApiKey] = useState(settings.alphaVantageApiKey || '')
   const [interval, setInterval] = useState(String(settings.refreshIntervalMinutes ?? 15))
   const [showKey, setShowKey] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [diagnostics, setDiagnostics] = useState(null)
+  const [checking, setChecking] = useState(false)
+
+  async function checkSources() {
+    setChecking(true)
+    try {
+      setDiagnostics(await runDiagnostics({ alphaVantageApiKey: apiKey.trim() }))
+    } finally {
+      setChecking(false)
+    }
+  }
 
   async function onSubmit(event) {
     event.preventDefault()
@@ -88,6 +100,38 @@ export default function Settings({ settings, rateLimit, onSave, onClose }) {
               </p>
             </div>
           )}
+
+          <div className="rounded-lg border border-hairline-light p-3 dark:border-hairline-dark">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-xs font-medium">Fonti dei prezzi</p>
+              <button type="button" className="btn py-1 text-xs" onClick={checkSources} disabled={checking}>
+                {checking ? 'Verifica…' : 'Verifica ora'}
+              </button>
+            </div>
+            {diagnostics && (
+              <ul className="mt-2 space-y-1 text-xs">
+                {diagnostics.map((r) => (
+                  <li key={r.nome} className="flex gap-2">
+                    <span className={r.ok ? 'text-positive-light dark:text-positive-dark' : 'text-negative-light dark:text-negative-dark'}>
+                      {r.ok ? '✓' : '✕'}
+                    </span>
+                    <span className="min-w-0">
+                      <span className="font-medium">{r.nome}</span>{' '}
+                      <span className="break-words text-subtle-light dark:text-subtle-dark">
+                        — {r.dettaglio}
+                      </span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {!diagnostics && (
+              <p className="mt-1 text-xs text-subtle-light dark:text-subtle-dark">
+                Controlla quali servizi risponde il tuo browser, utile se un asset resta senza
+                prezzo.
+              </p>
+            )}
+          </div>
 
           <p className="text-xs text-muted">
             Tutti i dati restano su questo dispositivo, nel localStorage del browser. Usa il backup

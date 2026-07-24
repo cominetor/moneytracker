@@ -14,8 +14,19 @@ export default function Dashboard({
   onOpenSettings,
   onRestored,
 }) {
-  const { holdings, positions, allocation, snapshots, totals, updatedAt, hasStalePrices, refreshing, rateLimit, refresh } =
-    portfolio
+  const {
+    holdings,
+    positions,
+    allocation,
+    snapshots,
+    totals,
+    updatedAt,
+    hasStalePrices,
+    refreshing,
+    refreshError,
+    rateLimit,
+    refresh,
+  } = portfolio
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 p-4 pb-16 sm:p-6">
@@ -24,6 +35,7 @@ export default function Dashboard({
         updatedAt={updatedAt}
         hasStalePrices={hasStalePrices}
         refreshing={refreshing}
+        refreshError={refreshError}
         rateLimit={rateLimit}
         onRefresh={refresh}
         onOpenSettings={onOpenSettings}

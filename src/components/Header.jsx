@@ -30,6 +30,7 @@ export default function Header({
   updatedAt,
   hasStalePrices,
   refreshing,
+  refreshError,
   rateLimit,
   onRefresh,
   onOpenSettings,
@@ -99,6 +100,10 @@ export default function Header({
           </span>
         )}
       </div>
+
+      {refreshError && (
+        <p className="mt-2 text-xs text-negative-light dark:text-negative-dark">{refreshError}</p>
+      )}
 
       <div className="mt-4 flex flex-wrap gap-2">{children}</div>
     </header>

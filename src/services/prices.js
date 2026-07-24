@@ -7,27 +7,46 @@
  */
 import { fetchCryptoPrices } from './coingecko.js'
 import { fetchStockQuote } from './yahooFinance.js'
+import { fetchStooqQuote, isStooqSupported } from './stooq.js'
 import { fetchStockPriceUSD, RateLimitError } from './alphaVantage.js'
 import { getRatesFrom } from './fx.js'
 import { getCache, getCachedPrice, isFresh, putPrices, PRICE_TTL_MS } from './priceCache.js'
 
+/**
+ * Prova le fonti azionarie in ordine finché una risponde.
+ * Se falliscono tutte, l'errore riporta il motivo di ognuna: senza questo
+ * dettaglio in interfaccia resterebbe solo un badge "non aggiornato" muto.
+ */
 async function quoteStock(ticker, settings) {
-  try {
-    const { price, currency } = await fetchStockQuote(ticker)
-    const { rates } = await getRatesFrom(currency)
-    return { prezzoUSD: price * rates.USD, prezzoEUR: price * rates.EUR }
-  } catch (yahooError) {
-    if (!settings.alphaVantageApiKey) throw yahooError
+  const sources = [
+    { nome: 'Yahoo Finance', run: () => fetchStockQuote(ticker) },
+  ]
+  if (isStooqSupported(ticker)) {
+    sources.push({ nome: 'Stooq', run: () => fetchStooqQuote(ticker) })
+  }
+  if (settings.alphaVantageApiKey) {
+    sources.push({
+      nome: 'Alpha Vantage',
+      run: async () => ({
+        price: await fetchStockPriceUSD(ticker, settings.alphaVantageApiKey),
+        currency: 'USD',
+      }),
+    })
+  }
+
+  const failures = []
+  for (const source of sources) {
     try {
-      const prezzoUSD = await fetchStockPriceUSD(ticker, settings.alphaVantageApiKey)
-      const { rates } = await getRatesFrom('USD')
-      return { prezzoUSD, prezzoEUR: prezzoUSD * rates.EUR }
-    } catch (alphaError) {
-      throw alphaError instanceof RateLimitError
-        ? new Error('Limite richieste Alpha Vantage raggiunto')
-        : alphaError
+      const { price, currency } = await source.run()
+      const { rates } = await getRatesFrom(currency)
+      return { prezzoUSD: price * rates.USD, prezzoEUR: price * rates.EUR }
+    } catch (err) {
+      const motivo =
+        err instanceof RateLimitError ? 'limite richieste raggiunto' : err.message || 'errore'
+      failures.push(`${source.nome}: ${motivo}`)
     }
   }
+  throw new Error(failures.join(' · '))
 }
 
 /**
