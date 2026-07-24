@@ -1,0 +1,47 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    color-scheme: light dark;
+  }
+
+  body {
+    @apply bg-page-light text-ink-light antialiased dark:bg-page-dark dark:text-ink-dark;
+    font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  }
+
+  /* colonne numeriche allineate */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-xl border border-hairline-light bg-surface-light p-4 dark:border-hairline-dark dark:bg-surface-dark;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-hairline-light px-3 py-2 text-sm font-medium
+           text-ink-light transition-colors hover:bg-page-light disabled:cursor-not-allowed disabled:opacity-50
+           dark:border-hairline-dark dark:text-ink-dark dark:hover:bg-page-dark;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-ink-light px-3 py-2 text-sm font-medium text-surface-light
+           transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50
+           dark:bg-ink-dark dark:text-surface-dark;
+  }
+
+  .field {
+    @apply w-full rounded-lg border border-hairline-light bg-surface-light px-3 py-2 text-sm text-ink-light
+           outline-none placeholder:text-muted focus:border-baseline-light
+           dark:border-hairline-dark dark:bg-surface-dark dark:text-ink-dark dark:focus:border-baseline-dark;
+  }
+
+  .label {
+    @apply mb-1 block text-xs font-medium uppercase tracking-wide text-subtle-light dark:text-subtle-dark;
+  }
+}
