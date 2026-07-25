@@ -44,6 +44,25 @@ async function fromYahoo(ticker) {
     : { price, currency: raw.toUpperCase(), fonte: 'Yahoo Finance' }
 }
 
+/**
+ * Ultima spiaggia, attiva solo se il repository definisce il secret
+ * ALPHAVANTAGE_API_KEY. La chiave non compare mai nel codice né nel sito
+ * generato: resta nei secret di GitHub e vive solo dentro il runner.
+ */
+async function fromAlphaVantage(ticker) {
+  const key = process.env.ALPHAVANTAGE_API_KEY
+  if (!key) throw new Error('secret ALPHAVANTAGE_API_KEY non configurato')
+  const data = await getJSON(
+    'https://www.alphavantage.co/query?function=GLOBAL_QUOTE' +
+      `&symbol=${encodeURIComponent(ticker)}&apikey=${encodeURIComponent(key)}`,
+  )
+  const price = Number(data?.['Global Quote']?.['05. price'])
+  if (!Number.isFinite(price) || price <= 0) {
+    throw new Error(data?.Note || data?.Information || 'nessuna quotazione')
+  }
+  return { price, currency: 'USD', fonte: 'Alpha Vantage' }
+}
+
 const rateCache = new Map()
 
 async function ratesFrom(base) {
@@ -61,13 +80,17 @@ async function ratesFrom(base) {
 }
 
 async function quote(ticker) {
-  // per i ticker USA Stooq è la fonte più stabile da un runner; per gli altri
-  // (suffisso di borsa) serve Yahoo, che conosce la valuta di quotazione
-  const sources = ticker.includes('.') ? [fromYahoo] : [fromStooq, fromYahoo]
+  // Yahoo conosce la valuta di quotazione ed è affidabile dal runner;
+  // Stooq (solo listini USA) e Alpha Vantage restano come rincalzi
+  const sources = [
+    { nome: 'Yahoo', run: fromYahoo },
+    ...(ticker.includes('.') ? [] : [{ nome: 'Stooq', run: fromStooq }]),
+    { nome: 'Alpha Vantage', run: fromAlphaVantage },
+  ]
   const failures = []
   for (const source of sources) {
     try {
-      const { price, currency, fonte } = await source(ticker)
+      const { price, currency, fonte } = await source.run(ticker)
       const rates = await ratesFrom(currency)
       return {
         prezzoUSD: price * rates.USD,
@@ -76,7 +99,7 @@ async function quote(ticker) {
         fonte,
       }
     } catch (err) {
-      failures.push(`${source.name}: ${err.message}`)
+      failures.push(`${source.nome}: ${err.message}`)
     }
   }
   throw new Error(failures.join(' · '))

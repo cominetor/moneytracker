@@ -78,9 +78,10 @@ src/
 
 ## Quotazioni azionarie servite dal sito
 
-`.github/workflows/deploy.yml` esegue `scripts/fetch-prices.mjs` a ogni push e ogni 30
-minuti: il runner interroga Stooq/Yahoo (dove i limiti CORS del browser non esistono) e
-scrive `public/prices.json`, che viene pubblicato insieme all'app. Per seguire un nuovo
+`.github/workflows/deploy.yml` esegue `scripts/fetch-prices.mjs` a ogni push e ogni 15
+minuti: il runner interroga Yahoo/Stooq (dove i limiti CORS del browser non esistono) e
+scrive `public/prices.json`, che viene pubblicato insieme all'app. Le quotazioni non sono
+quindi in tempo reale: valgono l'ultima esecuzione del workflow. Per seguire un nuovo
 titolo basta aggiungerlo a `tickers.json`:
 
 ```json
@@ -88,6 +89,11 @@ titolo basta aggiungerlo a `tickers.json`:
 ```
 
 Le crypto non passano da qui: CoinGecko risponde direttamente al browser.
+
+Come ulteriore rincalzo il workflow può usare Alpha Vantage: basta definire il secret di
+repository `ALPHAVANTAGE_API_KEY` (Settings → Secrets and variables → Actions). Se il
+secret non esiste la fonte viene saltata senza errori. La chiave non va **mai** scritta nel
+codice: il repository è pubblico.
 
 ## Dati in localStorage
 

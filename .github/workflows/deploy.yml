@@ -5,9 +5,9 @@ on:
     branches:
       - main
       - claude/portfolio-tracker-webapp-vvv30d
-  # aggiorna le quotazioni statiche ogni 30 minuti
+  # aggiorna le quotazioni statiche ogni 15 minuti
   schedule:
-    - cron: '*/30 * * * *'
+    - cron: '*/15 * * * *'
   workflow_dispatch:
 
 permissions:
@@ -36,6 +36,9 @@ jobs:
       # e finiscono in public/prices.json servito insieme all'app
       - name: Aggiorna quotazioni azionarie
         run: node scripts/fetch-prices.mjs
+        env:
+          # facoltativo: se il secret non esiste la fonte viene semplicemente saltata
+          ALPHAVANTAGE_API_KEY: ${{ secrets.ALPHAVANTAGE_API_KEY }}
 
       - run: npm run build
 
