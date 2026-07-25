@@ -2,7 +2,7 @@
  * Calcolo delle posizioni e dei totali di portafoglio a partire da
  * holdings + priceCache. Nessuna dipendenza dalla UI.
  */
-import { cacheKey, isFresh, PRICE_TTL_MS } from './priceCache.js'
+import { cacheKey, isFresh, STALE_AFTER_MS } from './priceCache.js'
 
 /**
  * @returns {Array} posizioni arricchite con prezzo, valore e stato della quotazione
@@ -21,8 +21,8 @@ export function buildPositions(holdings, priceCache, errors = {}) {
       aggiornatoIl: price?.timestamp ?? null,
       valoreUSD: price ? price.prezzoUSD * quantita : 0,
       valoreEUR: price ? price.prezzoEUR * quantita : 0,
-      // "non aggiornato": prezzo assente, più vecchio del TTL, o ultimo fetch fallito
-      stale: !price || !isFresh(price, PRICE_TTL_MS) || Boolean(errors[ticker]),
+      // "non aggiornato": prezzo assente, troppo vecchio, o ultimo tentativo fallito
+      stale: !price || !isFresh(price, STALE_AFTER_MS) || Boolean(errors[ticker]),
       errore: errors[ticker] || null,
     }
   })

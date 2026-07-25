@@ -2,44 +2,54 @@
  * Orchestratore dei prezzi: decide cosa prendere dalla cache e cosa chiedere alle API,
  * scrive i risultati in priceCache e restituisce gli errori per singolo ticker.
  *
- * Azioni: si usa Yahoo Finance, che non richiede API key. Alpha Vantage resta come
- * ripiego facoltativo, usato solo se Yahoo fallisce e la key è configurata.
+ * Azioni: la fonte primaria è il feed statico generato dal workflow del repo, con
+ * ripiego sulle chiamate dirette (Yahoo, Stooq) e infine su Alpha Vantage se la
+ * key facoltativa è configurata. Nessun percorso richiede chiavi obbligatorie.
  */
 import { fetchCryptoPrices } from './coingecko.js'
+import { fetchFeedQuote } from './staticFeed.js'
 import { fetchStockQuote } from './yahooFinance.js'
 import { fetchStooqQuote, isStooqSupported } from './stooq.js'
 import { fetchStockPriceUSD, RateLimitError } from './alphaVantage.js'
 import { getRatesFrom } from './fx.js'
 import { getCache, getCachedPrice, isFresh, putPrices, PRICE_TTL_MS } from './priceCache.js'
 
+/** Converte una quotazione nella sua valuta in coppia EUR/USD. */
+async function toPair({ price, currency }) {
+  const { rates } = await getRatesFrom(currency)
+  return { prezzoUSD: price * rates.USD, prezzoEUR: price * rates.EUR }
+}
+
 /**
  * Prova le fonti azionarie in ordine finché una risponde.
+ * Il feed statico viene per primo perché è servito dallo stesso dominio dell'app:
+ * le chiamate diretto ai provider possono essere bloccate dal browser (CORS).
  * Se falliscono tutte, l'errore riporta il motivo di ognuna: senza questo
  * dettaglio in interfaccia resterebbe solo un badge "non aggiornato" muto.
  */
 async function quoteStock(ticker, settings) {
   const sources = [
-    { nome: 'Yahoo Finance', run: () => fetchStockQuote(ticker) },
+    { nome: 'Feed del sito', run: () => fetchFeedQuote(ticker) },
+    { nome: 'Yahoo Finance', run: async () => toPair(await fetchStockQuote(ticker)) },
   ]
   if (isStooqSupported(ticker)) {
-    sources.push({ nome: 'Stooq', run: () => fetchStooqQuote(ticker) })
+    sources.push({ nome: 'Stooq', run: async () => toPair(await fetchStooqQuote(ticker)) })
   }
   if (settings.alphaVantageApiKey) {
     sources.push({
       nome: 'Alpha Vantage',
-      run: async () => ({
-        price: await fetchStockPriceUSD(ticker, settings.alphaVantageApiKey),
-        currency: 'USD',
-      }),
+      run: async () =>
+        toPair({
+          price: await fetchStockPriceUSD(ticker, settings.alphaVantageApiKey),
+          currency: 'USD',
+        }),
     })
   }
 
   const failures = []
   for (const source of sources) {
     try {
-      const { price, currency } = await source.run()
-      const { rates } = await getRatesFrom(currency)
-      return { prezzoUSD: price * rates.USD, prezzoEUR: price * rates.EUR }
+      return await source.run()
     } catch (err) {
       const motivo =
         err instanceof RateLimitError ? 'limite richieste raggiunto' : err.message || 'errore'

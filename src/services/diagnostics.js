@@ -4,6 +4,7 @@
  * raggiungibile, senza dover leggere la console.
  */
 import { fetchCryptoPrices } from './coingecko.js'
+import { feedCoverage } from './staticFeed.js'
 import { fetchStockQuote } from './yahooFinance.js'
 import { fetchStooqQuote } from './stooq.js'
 import { fetchStockPriceUSD } from './alphaVantage.js'
@@ -22,6 +23,16 @@ async function check(nome, run) {
  */
 export async function runDiagnostics(settings) {
   const checks = [
+    check('Feed del sito (azioni)', async () => {
+      const { generatoIl, tickers, errori } = await feedCoverage()
+      if (tickers.length === 0) throw new Error('nessuna quotazione nel feed')
+      const quando = generatoIl ? new Date(generatoIl).toLocaleString('it-IT') : 'data ignota'
+      const falliti = Object.keys(errori)
+      return (
+        `${tickers.join(', ')} — generato il ${quando}` +
+        (falliti.length ? ` (senza quotazione: ${falliti.join(', ')})` : '')
+      )
+    }),
     check('CoinGecko (crypto)', async () => {
       const { prices, errors } = await fetchCryptoPrices(['BTC'])
       if (!prices.BTC) throw new Error(errors.BTC || 'nessun prezzo restituito')

@@ -119,8 +119,10 @@ export default function AssetForm({ holding, onSave, onClose }) {
 
           {values.tipo === 'stock' && (
             <p className="text-xs text-subtle-light dark:text-subtle-dark">
-              Per le borse non americane aggiungi il suffisso di mercato: ENI.MI (Milano),
-              VOD.L (Londra), AIR.PA (Parigi).
+              Per le borse non americane aggiungi il suffisso di mercato: ENI.MI (Milano), VOD.L
+              (Londra), AIR.PA (Parigi). Se il browser blocca le fonti dirette, il titolo va
+              elencato in <code>tickers.json</code> nel repo: da lì il sito genera le quotazioni
+              ogni 30 minuti.
             </p>
           )}
         </div>

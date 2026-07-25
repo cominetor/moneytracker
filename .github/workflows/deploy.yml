@@ -5,6 +5,9 @@ on:
     branches:
       - main
       - claude/portfolio-tracker-webapp-vvv30d
+  # aggiorna le quotazioni statiche ogni 30 minuti
+  schedule:
+    - cron: '*/30 * * * *'
   workflow_dispatch:
 
 permissions:
@@ -28,6 +31,11 @@ jobs:
           cache: npm
 
       - run: npm ci
+
+      # le quotazioni vengono recuperate qui, dove non esistono limiti CORS,
+      # e finiscono in public/prices.json servito insieme all'app
+      - name: Aggiorna quotazioni azionarie
+        run: node scripts/fetch-prices.mjs
 
       - run: npm run build
 

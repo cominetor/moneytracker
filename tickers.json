@@ -1,0 +1,4 @@
+{
+  "_nota": "Titoli azionari per cui il workflow genera le quotazioni statiche servite dall'app. Le crypto non servono qui: CoinGecko funziona direttamente dal browser.",
+  "stocks": ["RBA"]
+}

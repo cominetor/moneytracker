@@ -23,13 +23,16 @@ Build di produzione: `npm run build` (output in `dist/`), anteprima con `npm run
 - **Prezzi crypto** da [CoinGecko](https://www.coingecko.com/) (`/simple/price`, nessuna
   API key). Il ticker viene risolto nell'`id` CoinGecko tramite una mappa delle crypto più
   comuni, con fallback sull'endpoint `/search`.
-- **Prezzi azioni** da Yahoo Finance (`/v8/finance/chart`, **senza API key**), nella valuta
-  di quotazione del titolo e quindi convertiti in EUR/USD con il cambio di
-  [Frankfurter](https://frankfurter.app/) (gratuito, senza key). Per le borse non americane
-  serve il suffisso di mercato: `ENI.MI`, `VOD.L`, `AIR.PA`.
-- **Ripiego facoltativo** su [Alpha Vantage](https://www.alphavantage.co/) (`GLOBAL_QUOTE`):
-  usato solo se Yahoo non risponde e se una API key è stata configurata nelle impostazioni.
-  Senza key l'app funziona comunque.
+- **Prezzi azioni**: fonte primaria è `prices.json`, generato dal workflow del repo ogni 30
+  minuti e servito insieme all'app. Essendo *same-origin* non è soggetto alle politiche CORS
+  che dal browser possono bloccare i provider. I titoli coperti sono quelli elencati in
+  `tickers.json`. Per le borse non americane serve il suffisso di mercato: `ENI.MI`, `VOD.L`,
+  `AIR.PA`.
+- **Ripieghi**, provati in ordine se il feed non copre il titolo: Yahoo Finance
+  (`/v8/finance/chart`), Stooq (CSV, listini USA) e infine
+  [Alpha Vantage](https://www.alphavantage.co/) solo se una API key facoltativa è stata
+  configurata. Tutti i prezzi vengono convertiti in EUR/USD con il cambio di
+  [Frankfurter](https://frankfurter.app/).
 - **Cache e rate limit**: un prezzo più recente di 15 minuti non viene richiesto di nuovo;
   le chiamate ad Alpha Vantage passano da una coda che rispetta il piano gratuito
   (5 richieste/minuto, 25/giorno, contatore giornaliero persistito). In caso di errore o
@@ -56,7 +59,10 @@ src/
     storage.js             unico accesso a localStorage
     priceCache.js          cache prezzi con TTL di 15 minuti
     coingecko.js           prezzi crypto + mappa ticker → id
+    staticFeed.js          lettura di prices.json (fonte primaria azioni)
     yahooFinance.js        prezzi azioni senza API key
+    stooq.js               prezzi azioni USA senza API key (CSV)
+    diagnostics.js         verifica di raggiungibilità delle fonti
     alphaVantage.js        prezzi azioni di ripiego (GLOBAL_QUOTE)
     rateLimiter.js         coda/throttle 5 al minuto, 25 al giorno
     fx.js                  cambi verso EUR/USD (Frankfurter)
@@ -69,6 +75,19 @@ src/
   utils/                   formattazione numeri/date, mappa colori delle serie
   theme/palette.js         palette dei grafici (light/dark)
 ```
+
+## Quotazioni azionarie servite dal sito
+
+`.github/workflows/deploy.yml` esegue `scripts/fetch-prices.mjs` a ogni push e ogni 30
+minuti: il runner interroga Stooq/Yahoo (dove i limiti CORS del browser non esistono) e
+scrive `public/prices.json`, che viene pubblicato insieme all'app. Per seguire un nuovo
+titolo basta aggiungerlo a `tickers.json`:
+
+```json
+{ "stocks": ["RBA", "AAPL", "ENI.MI"] }
+```
+
+Le crypto non passano da qui: CoinGecko risponde direttamente al browser.
 
 ## Dati in localStorage
 
